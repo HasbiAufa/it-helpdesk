@@ -1,0 +1,120 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Carbon\Carbon;
+use App\Exports\TicketExport;
+use Illuminate\Http\Request;
+use App\Models\Ticket; // buat controller ngenalin tabel ticket
+use Carbon\Carbon as CarbonAlias;
+use Maatwebsite\Excel\Facades\Excel;
+use PhpParser\Builder\Function_;
+
+use function Symfony\Component\Clock\now;
+
+class TicketCotroller extends Controller
+{
+    public function index(Request $request)
+    {
+        // FITUR FILTER WAKTU
+        $filter = $request->get('filter', 'bulan_ini'); // default nampilin bulan ini
+        $query = Ticket::query();
+
+        if($filter == 'hari_ini'){ // filter hari ini
+            $query->whereDate('created_at', Carbon::today());
+        } elseif($filter == 'bulan_ini'){ // filter bulan ini
+            $query->whereMonth('created_at', Carbon::now()->month)->whereYear('created_at', Carbon::now()->year);
+        } elseif($filter == 'tahun_ini'){ // filter tahun ini
+            $query->whereYear('created_at', Carbon::now()->year);
+        }
+
+        $tickets = $query->orderBy('created_at', 'desc')->get(); // ngambil data sesuai filter
+
+        // STATUS DASHBOARD (ngikut filter)
+        $totalBaru = $tickets->where('status', 'Baru')->count();
+        $totalProses = $tickets->where('status', 'Proses')->count();
+        $totalSelesai = $tickets->where('status', 'Selesai')->count();
+
+        // REKAP KENDALA
+        $ListKategori = ['Jaringan', 'Komputer', 'Printer', 'Khanza', 'Antrian', 'Lain-lain'];
+        $rekapKategori = [];
+
+        foreach($ListKategori as $kat){
+            $dataKategori = $tickets->where('kategori', $kat);
+
+            $rekapKategori[] = [
+                'nama' => $kat,
+                'total' => $dataKategori->count(),
+                'tertangani' => $dataKategori->where('status', 'Selesai')->count(),
+                'tidak_tertangani' => $dataKategori->whereIn('status', ['Baru', 'Proses'])->count(),
+            ];
+        }
+
+        // HITUNG RATA2 RESPON TIME
+        $respondedTickets = $tickets->where('waktu_respon', '!=', null);
+        $avgResponseTime = 0;
+
+        if($respondedTickets->count() > 0){
+            $totalSelisihMenit = $respondedTickets->reduce(function ($carry, $ticket){
+                $start = Carbon::parse($ticket->created_at);
+                $respon = Carbon::parse($ticket->waktu_respon);
+
+                return $carry + $start->floatDiffInMinutes($respon);
+            }, 0);
+
+            // rata rata
+            $avgResponseTime = round($totalSelisihMenit / $respondedTickets->count(), 1);
+        }
+
+        // DATA PIE CHART
+        $dataPie = collect($rekapKategori)->pluck('total');
+
+        return view('index', compact(
+            'tickets',
+            'filter',
+            'totalBaru', 'totalProses', 'totalSelesai',
+            'rekapKategori',
+            'avgResponseTime',
+            'dataPie'
+        ));
+
+        // $tickets = Ticket::latest()->get(); //ngambil tiket dan ngurutin dari yang paling baru 
+        // return view('index', compact('tickets')); //nampilin view 
+    }
+
+    public function store(Request $request) //function nyimpen data 
+    {
+        $request->validate([ //validasi kalo si input ini gaboleh kosong
+            'lokasi' => 'required',
+            'kategori' => 'required',
+            'kendala' => 'required',
+        ]);
+        Ticket::create([ //bikin tiket terus disimpen di database
+            'lokasi' => $request->lokasi, //3 ke bawah ini hasil input dari user
+            'kategori' => $request->kategori,
+            'kendala' => $request->kendala,
+            'status' => 'Baru', // otomatis statusnya jadi baru ketika tiker baru aja terkirim
+        ]);// balik lagi ke halaman awal
+        return redirect()->route('home')->with('success', 'Laporan berhasil dicatat!');
+    }
+
+    public function export()
+    {
+        return Excel::download(new TicketExport, 'laporan-helpdesk.xlsx');
+    }
+    public function update(Request $request, $id) //fungsi buat update status
+    {
+        $ticket = Ticket::find($id);
+        $statusBaru = $request->status; //ngecek status baru
+        $dataUpdate = ['status' => $statusBaru]; //data status baru yang mau dipake
+
+        if($statusBaru == 'Proses' && $ticket->waktu_respon == null) { //kalo status nya udah berubah, real time catet waktu RN
+            $dataUpdate['waktu_respon'] = now();
+        }
+        if($statusBaru == 'Selesai'){
+            $dataUpdate['waktu_selesai'] = now();
+        }
+        $ticket->update($dataUpdate);
+        return redirect()->back()->with('success', 'Status dperbarui!');
+    }
+}
