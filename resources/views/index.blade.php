@@ -143,13 +143,15 @@
                         <form action="{{ route('ticket.store') }}" method="POST">
                             @csrf
                             
+                            {{-- KOLOM LOKASI --}}
                             <div class="mb-3">
-                                <label class="form-label small text-muted">Lokasi / Ruangan</label>
+                                <label class="form-label fw-bold">Lokasi / Ruangan</label>
                                 <input type="text" name="lokasi" class="form-control" placeholder="Contoh: Poli Gigi / R. Direktur" required>
                             </div>
 
+                            {{-- KOLOM KATEGORI --}}
                             <div class="mb-3">
-                                <label class="form-label small text-muted">Kategori</label>
+                                <label class="form-label fw-bold">Kategori</label>
                                 <select name="kategori" class="form-select" required>
                                     <option value="">-- Pilih --</option>
                                     <option value="Jaringan">Jaringan</option>
@@ -161,8 +163,9 @@
                                 </select>
                             </div>
 
+                            {{-- KOLOM KENDALA --}}
                             <div class="mb-3">
-                                <label class="form-label small text-muted">Kendala</label>
+                                <label class="form-label fw-bold">Kendala</label>
                                 <textarea name="kendala" class="form-control" rows="3" placeholder="Paste keluhan user di sini..." required></textarea>
                             </div>
 
@@ -193,6 +196,7 @@
                                         <th>Kategori</th>
                                         <th>Kendala</th>
                                         <th>Status</th>
+                                        <th>Edit</th> 
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -248,8 +252,132 @@
                                                 @endif
                                             </div>
                                         </td>
+
+                                        {{-- TOMBOL EDIT --}}
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-light border" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#modalEdit{{ $ticket->id }}">
+                                                <i class="fas fa-edit text-primary"></i>
+                                            </button>
+                                        </td>
                                         
                                     </tr>
+
+                                    {{-- POP UP EDIT --}}
+                                    <div class="modal fade" id="modalEdit{{ $ticket->id }}" tabindex="-1">
+                                        <div class="modal-dialog modal-lg">
+                                            <div class="modal-content">
+
+                                                <div class="modal-header bg-light">
+                                                    <h5 class="modal-title fw-bold text-primary">
+                                                        <i class="fas fa-edit me-2"></i>Edit & Revisi Tiket
+                                                    </h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+
+                                                <div class="modal-body">
+                                                    {{-- PERBAIKAN 1: Form ditaruh DI DALAM modal-body --}}
+                                                    {{-- PERBAIKAN 2: Ditambahin id="formUpdate..." biar tombol Simpan bisa ngenalin --}}
+                                                    <form id="formUpdate{{ $ticket->id }}" action="{{ route('ticket.update', $ticket->id) }}" method="POST">
+                                                        @csrf
+                                                        @method('PUT')
+
+                                                        <div class="row g-3">
+                                                            <div class="col-md-12">
+                                                                <div class="p-3 bg-white border rounded shadow-sm">
+                                                                    <h6 class="fw-bold border-bottom pb-2 mb-3">📝 Data Laporan</h6>
+
+                                                                    <div class="row g-3">
+                                                                        <div class="col-md-6">
+                                                                            <label class="form-label small text-muted fw-bold">Lokasi / Ruangan</label>
+                                                                            <input type="text" name="lokasi" class="form-control"
+                                                                                value="{{ $ticket->lokasi }}" placeholder="Contoh: Poli Gigi">
+                                                                        </div>
+
+                                                                        <div class="col-md-6">
+                                                                            <label class="form-label small text-muted fw-bold">Kategori</label>
+                                                                            <select name="kategori" class="form-select" required>
+                                                                                <option value="Jaringan" {{ $ticket->kategori == 'Jaringan' ? 'selected' : '' }}>Jaringan</option>
+                                                                                <option value="Komputer" {{ $ticket->kategori == 'Komputer' ? 'selected' : '' }}>Komputer</option>
+                                                                                <option value="Printer" {{ $ticket->kategori == 'Printer' ? 'selected' : '' }}>Printer</option>
+                                                                                <option value="Khanza" {{ $ticket->kategori == 'Khanza' ? 'selected' : '' }}>Khanza</option>
+                                                                                <option value="Antrian" {{ $ticket->kategori == 'Antrian' ? 'selected' : '' }}>Antrian</option>
+                                                                                <option value="Lain-lain" {{ $ticket->kategori == 'Lain-lain' ? 'selected' : '' }}>Lain-lain</option>
+                                                                            </select>
+                                                                        </div>
+
+                                                                        <div class="col-12">
+                                                                            <label class="form-label small text-muted fw-bold">Kendala</label>
+                                                                            <input type="text" name="kendala" class="form-control"
+                                                                                value="{{ $ticket->kendala }}">
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="col-md-12">
+                                                                <div class="p-3 bg-light border rounded">
+                                                                    <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">
+                                                                        <i class="fas fa-history me-1"></i> Timeline Waktu (Susulan)
+                                                                    </h6>
+
+                                                                    <div class="alert alert-warning py-2 px-3 small mb-3">
+                                                                        <i class="fas fa-info-circle me-1"></i>
+                                                                        Klik ikon kalender untuk memilih, atau <b>ketik angka jam</b> secara manual.
+                                                                    </div>
+
+                                                                    <div class="row g-3">
+                                                                        <div class="col-md-4">
+                                                                            <label class="form-label small fw-bold text-secondary">1. Laporan Masuk</label>
+                                                                            <input type="datetime-local" name="created_at" class="form-control"
+                                                                                value="{{ $ticket->created_at->format('Y-m-d\TH:i') }}">
+                                                                        </div>
+
+                                                                        <div class="col-md-4">
+                                                                            <label class="form-label small fw-bold text-secondary">2. Mulai Dikerjakan</label>
+                                                                            <input type="datetime-local" name="waktu_respon" class="form-control"
+                                                                                value="{{ $ticket->waktu_respon ? \Carbon\Carbon::parse($ticket->waktu_respon)->format('Y-m-d\TH:i') : '' }}">
+                                                                        </div>
+
+                                                                        <div class="col-md-4">
+                                                                            <label class="form-label small fw-bold text-secondary">3. Selesai Dikerjakan</label>
+                                                                            <input type="datetime-local" name="waktu_selesai" class="form-control"
+                                                                                value="{{ $ticket->waktu_selesai ? \Carbon\Carbon::parse($ticket->waktu_selesai)->format('Y-m-d\TH:i') : '' }}">
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </form> {{-- Penutup Form Update yang BENAR di sini --}}
+                                                </div>
+
+                                                <div class="modal-footer bg-light justify-content-between">
+                                                    {{-- Form Delete (Aman) --}}
+                                                    <form action="{{ route('ticket.destroy', $ticket->id) }}" method="POST">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-danger"
+                                                            onclick="return confirm('⚠️ Yakin mau menghapus tiket ini permanen?');">
+                                                            <i class="fas fa-trash-alt me-1"></i> Hapus
+                                                        </button>
+                                                    </form>
+
+                                                    <div>
+                                                        <button type="button" class="btn btn-secondary me-1" data-bs-dismiss="modal">Batal</button>
+                                                        
+                                                        {{-- Tombol Simpan (Sekarang akan berfungsi karena ID Form sudah ada) --}}
+                                                        <button type="button" class="btn btn-primary fw-bold"
+                                                            onclick="document.getElementById('formUpdate{{ $ticket->id }}').submit()">
+                                                            <i class="fas fa-save me-1"></i> Simpan Perubahan
+                                                        </button>
+                                                    </div>
+                                                </div> {{-- Footer ditutup dengan rapi, tanpa sisa tag form --}}
+
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     @empty
                                     <tr>
                                         <td colspan="5" class="text-center py-4 text-muted">

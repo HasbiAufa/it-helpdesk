@@ -6,11 +6,7 @@ use Carbon\Carbon;
 use App\Exports\TicketExport;
 use Illuminate\Http\Request;
 use App\Models\Ticket; // buat controller ngenalin tabel ticket
-use Carbon\Carbon as CarbonAlias;
 use Maatwebsite\Excel\Facades\Excel;
-use PhpParser\Builder\Function_;
-
-use function Symfony\Component\Clock\now;
 
 class TicketCotroller extends Controller
 {
@@ -104,17 +100,55 @@ class TicketCotroller extends Controller
     }
     public function update(Request $request, $id) //fungsi buat update status
     {
-        $ticket = Ticket::find($id);
-        $statusBaru = $request->status; //ngecek status baru
-        $dataUpdate = ['status' => $statusBaru]; //data status baru yang mau dipake
+        $ticket = Ticket::findOrFail($id);
+        if($request->has('lokasi') || $request->has('kendala')){
+            $ticket->lokasi = $request->lokasi;
+            $ticket->kategori = $request->kategori;
+            $ticket->kendala = $request->kendala;
 
-        if($statusBaru == 'Proses' && $ticket->waktu_respon == null) { //kalo status nya udah berubah, real time catet waktu RN
+            if($request->filled('created_at')){
+                $ticket->created_at = $request->created_at;
+            }
+
+            if($request->filled('waktu_respon')){
+                $ticket->waktu_respon = $request->waktu_respon;
+                if($ticket->status == 'Baru'){
+                    $ticket->status = 'Proses';
+                }
+            }
+
+            if($request->filled('waktu_selesai')){
+                $ticket->waktu_selesai = $request->waktu_selesai;
+                $ticket->status = 'Selesai';
+            }
+
+            $ticket->save();
+            return redirect()->back()->with('success', 'Data tiket berhasil direvisi!');
+        }
+
+        $statusBaru = $request->status;
+        $dataUpdate = ['status' => $statusBaru];
+
+        if($statusBaru == 'Proses' && $ticket->waktu_respon == null){
             $dataUpdate['waktu_respon'] = now();
         }
+
         if($statusBaru == 'Selesai'){
             $dataUpdate['waktu_selesai'] = now();
+            if($ticket->waktu_respon == null){
+                $dataUpdate['waktu_respon'] = now();
+            }
         }
+
         $ticket->update($dataUpdate);
-        return redirect()->back()->with('success', 'Status dperbarui!');
+        return redirect()->back()->with('success', 'Status diperbarui!');
+    }
+
+    // fungsi hapus data
+    public function destroy($id){
+        $ticket = Ticket::findOrFail($id); // nyari data
+        $ticket->delete(); // hapus
+
+        return redirect()->back()->with('success', 'Tiket Berhasil Dihapus!');
     }
 }

@@ -7,3 +7,4 @@ Route::get('/', [TicketCotroller::class, 'index'])->name('home'); // ngebuka hal
 Route::post('simpan', [TicketCotroller::class, 'store'])->name('ticket.store'); // nerima data dari form yang diisi, disimpen nya di sini
 Route::get('export-excel', [TicketCotroller::class, 'export'])->name('ticket.export');
 Route::put('/update-status/{id}', [TicketCotroller::class, 'update'])->name('ticket.update');
+Route::delete('/ticket/{id}', [TicketCotroller::class, 'destroy'])->name('ticket.destroy');
