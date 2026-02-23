@@ -101,7 +101,7 @@ class TicketCotroller extends Controller
     public function update(Request $request, $id) //fungsi buat update status
     {
         $ticket = Ticket::findOrFail($id);
-        if($request->has('lokasi') || $request->has('kendala')){
+        if($request->has('lokasi') || $request->has('kategori') || $request->has('kendala')){
             $ticket->lokasi = $request->lokasi;
             $ticket->kategori = $request->kategori;
             $ticket->kendala = $request->kendala;
