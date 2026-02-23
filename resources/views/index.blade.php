@@ -183,7 +183,7 @@
                 <div class="card shadow-sm border-0">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
                         <span class="fw-bold"><i class="fas fa-list me-1"></i> Daftar Tiket ({{ ucwords(str_replace('_', ' ', $filter)) }})</span>
-                        <a href="{{ route('ticket.export') }}" class="btn btn-success btn-sm">
+                        <a href="{{ route('ticket.export', ['filter' => $filter]) }}" class="btn btn-success btn-sm">
                             <i class="fas fa-file-excel me-1"></i> Export Laporan
                         </a>
                     </div>

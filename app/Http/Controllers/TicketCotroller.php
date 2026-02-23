@@ -94,9 +94,10 @@ class TicketCotroller extends Controller
         return redirect()->route('home')->with('success', 'Laporan berhasil dicatat!');
     }
 
-    public function export()
+    public function export(Request $request)
     {
-        return Excel::download(new TicketExport, 'laporan-helpdesk.xlsx');
+        $filter = $request->get('filter', 'bulan_ini');
+        return Excel::download(new TicketExport($filter), 'laporan-helpdesk.xlsx');
     }
     public function update(Request $request, $id) //fungsi buat update status
     {
