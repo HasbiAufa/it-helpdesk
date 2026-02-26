@@ -12,19 +12,22 @@ class TicketCotroller extends Controller
 {
     public function index(Request $request)
     {
-        // FITUR FILTER WAKTU
-        $filter = $request->get('filter', 'bulan_ini'); // default nampilin bulan ini
-        $query = Ticket::query();
+        // FILTER WAKTU
+        $defaultBulan = Carbon::now()->format('Y-m');
+        $filter = $request->get('filter', $defaultBulan);
 
-        if($filter == 'hari_ini'){ // filter hari ini
-            $query->whereDate('created_at', Carbon::today());
-        } elseif($filter == 'bulan_ini'){ // filter bulan ini
-            $query->whereMonth('created_at', Carbon::now()->month)->whereYear('created_at', Carbon::now()->year);
-        } elseif($filter == 'tahun_ini'){ // filter tahun ini
-            $query->whereYear('created_at', Carbon::now()->year);
+        if(empty($filter)){
+            $filter = $defaultBulan;
         }
 
-        $tickets = $query->orderBy('created_at', 'desc')->get(); // ngambil data sesuai filter
+        $parts = explode('-', $filter);
+        $tahun = $parts[0];
+        $bulan = $parts[1];
+
+        $query = Ticket::query();
+        $query->whereYear('created_at', $tahun)->whereMonth('created_at', $bulan);
+
+        $tickets = $query->orderBy('created_at', 'desc')->get();
 
         // STATUS DASHBOARD (ngikut filter)
         $totalBaru = $tickets->where('status', 'Baru')->count();
@@ -96,9 +99,11 @@ class TicketCotroller extends Controller
 
     public function export(Request $request)
     {
-        $filter = $request->get('filter', 'bulan_ini');
+        $defaultBulan = Carbon::now()->format('Y-m');
+        $filter = $request->get('filter', $defaultBulan);
         return Excel::download(new TicketExport($filter), 'laporan-helpdesk.xlsx');
     }
+    
     public function update(Request $request, $id) //fungsi buat update status
     {
         $ticket = Ticket::findOrFail($id);

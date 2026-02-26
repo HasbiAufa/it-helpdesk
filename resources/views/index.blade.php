@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IT Helpdesk RS - Internal Log</title>
+    <title>IT Helpdesk RS - Syahid</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -11,7 +11,7 @@
 <body class="bg-light">  
     <nav class="navbar navbar-dark bg-primary shadow-sm">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="#">
+            <a class="navbar-brand fw-bold" href="http://it-helpdesk.test">
                 <i class="fas fa-hospital-user me-2"></i> IT Helpdesk Internal
             </a>
             <span class="text-white text-sm">RS Syarif Hidayatullah</span>
@@ -21,16 +21,15 @@
     <div class="container mt-4">      
         <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
             <h4 class="fw-bold text-primary"><i class="fas fa-chart-line me-2"></i>Dashboard Monitoring</h4>
-            <form action="{{ route('home') }}" method="GET" class="d-flex">
-                <label class="col-form-label me-2 fw-bold text-muted small">Filter:</label>
-                <select name="filter" class="form-select form-select-sm" onchange="this.form.submit()" style="width: 150px;">
-                    <option value="hari_ini" {{ $filter == 'hari_ini' ? 'selected' : '' }}>Hari Ini</option>
-                    <option value="bulan_ini" {{ $filter == 'bulan_ini' ? 'selected' : '' }}>Bulan Ini</option>
-                    <option value="tahun_ini" {{ $filter == 'tahun_ini' ? 'selected' : '' }}>Tahun Ini</option>
-                </select>
+            <form action="{{ route('home') }}" method="GET" id="filterForm" class="d-flex">
+                <label class="col-form-label me-2 fw-bold text-muted small">Bulan:</label>
+                
+                <input type="text" id="monthPicker" name="filter" class="form-control form-control-sm bg-white" 
+                    value="{{ $filter }}" style="width: 100px; cursor: pointer;" placeholder="Pilih Bulan..." readonly>
             </form>
         </div>
         
+        {{-- KONTAINER TOTAL TIKET YANG BELUM DIRESPON --}}
         <div class="row mb-4">
             <div class="col-md-3">
                 <div class="card text-white bg-danger mb-3 shadow-sm h-100">
@@ -42,6 +41,7 @@
                 </div>
             </div>
 
+            {{-- KONTAINER TOTAL TIKET YANG SEDANG DIPROSES --}}
             <div class="col-md-3">
                 <div class="card text-dark bg-warning mb-3 shadow-sm h-100">
                     <div class="card-body">
@@ -52,6 +52,7 @@
                 </div>
             </div>
 
+            {{-- KONTAINER TOTAL TIKET YANG SELESAI --}}
             <div class="col-md-3">
                 <div class="card text-white bg-success mb-3 shadow-sm h-100">
                     <div class="card-body">
@@ -62,6 +63,7 @@
                 </div>
             </div>
 
+            {{-- KONTAINER RATA-RATA TIKET DIRESPON --}}
             <div class="col-md-3">
                 <div class="card text-white bg-primary mb-3 shadow-sm h-100">
                     <div class="card-body">
@@ -73,9 +75,10 @@
             </div>
         </div>
 
+        {{-- TABEL REKAP KATEGORI --}}
         <div class="card shadow-sm mb-5 border-0">
             <div class="card-header bg-white fw-bold py-3">
-                <i class="fas fa-table me-1"></i> Keterangan Jumlah Laporan per Kategori ({{ ucwords(str_replace('_', ' ', $filter)) }})
+                <i class="fas fa-table me-1"></i> Keterangan Jumlah Laporan per Kategori ({{ \Carbon\Carbon::parse($filter . '-01')->translatedFormat('F Y') }})
             </div>
             
             <div class="card-body p-0">
@@ -115,7 +118,7 @@
                             @endforeach
                             
                             <tr class="fw-bold table-secondary">
-                                <td colspan="2" class="text-end">JUMLAH TOTAL</td>
+                                <td colspan="2" class="text-center">JUMLAH TOTAL</td>
                                 <td>{{ $sumTotal }}</td>
                                 <td>{{ $sumTertangani }}</td>
                                 <td>{{ $sumTidak }}</td>
@@ -127,14 +130,16 @@
         </div>
 
         <div class="row">
+            {{-- ALERTY SUCCESS --}}
+            @if(session('success'))
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle me-1"></i> {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+            
+            {{-- KONTAINER INPUT TIKET BARU --}}
             <div class="col-md-4 mb-4">
-                @if(session('success'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        <i class="fas fa-check-circle me-1"></i> {{ session('success') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                @endif
-
                 <div class="card shadow-sm border-0">
                     <div class="card-header bg-white fw-bold">
                         <i class="fas fa-pen me-1"></i> Catat Tiket Baru
@@ -160,6 +165,7 @@
                                     <option value="Komputer">Komputer</option>
                                     <option value="Printer">Printer</option>
                                     <option value="Khanza">Khanza</option>
+                                    <option value="Sistem">Sistem</option>
                                     <option value="Antrian">Antrian</option>
                                     <option value="Lain-lain">Lain-lain</option>
                                 </select>
@@ -179,10 +185,11 @@
                 </div>
             </div>
 
+            {{-- TABEL DAFTAR TIKET BULAN INI DAN FUNCTION EXPORT --}}
             <div class="col-md-8">
                 <div class="card shadow-sm border-0">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                        <span class="fw-bold"><i class="fas fa-list me-1"></i> Daftar Tiket ({{ ucwords(str_replace('_', ' ', $filter)) }})</span>
+                        <span class="fw-bold"><i class="fas fa-list me-1"></i> Daftar Tiket ({{ \Carbon\Carbon::parse($filter . '-01')->translatedFormat('F Y') }})</span>
                         <a href="{{ route('ticket.export', ['filter' => $filter]) }}" class="btn btn-success btn-sm">
                             <i class="fas fa-file-excel me-1"></i> Export Laporan
                         </a>
@@ -215,7 +222,7 @@
                                         
                                         <td>{{ Str::limit($ticket->kendala, 50) }}</td>
                                         
-                                        {{-- KODE BARU BUAT OPSI UPDATE STATUS --}}
+                                        {{-- FITUR UPDATE STATUS --}}
                                         <td>
                                             <form action="{{ route('ticket.update', $ticket->id) }}" method="POST">
                                                 @csrf
@@ -247,6 +254,7 @@
                                                 </div>
                                             </form>
                                             
+                                            {{-- NAMPILIN WAKTU RESPON DAN SELESAI DI STATUS --}}
                                             <div style="font-size: 10px; color: gray; margin-top: 4px;">
                                                 @if($ticket->waktu_respon)
                                                     <div>Respon: {{ \Carbon\Carbon::parse($ticket->waktu_respon)->format('H:i') }}</div>
@@ -279,8 +287,6 @@
                                                 </div>
 
                                                 <div class="modal-body">
-                                                    {{-- PERBAIKAN 1: Form ditaruh DI DALAM modal-body --}}
-                                                    {{-- PERBAIKAN 2: Ditambahin id="formUpdate..." biar tombol Simpan bisa ngenalin --}}
                                                     <form id="formUpdate{{ $ticket->id }}" action="{{ route('ticket.update', $ticket->id) }}" method="POST">
                                                         @csrf
                                                         @method('PUT')
@@ -347,11 +353,10 @@
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </form> {{-- Penutup Form Update yang BENAR di sini --}}
+                                                    </form>
                                                 </div>
 
                                                 <div class="modal-footer bg-light justify-content-between">
-                                                    {{-- Form Delete (Aman) --}}
                                                     <form action="{{ route('ticket.destroy', $ticket->id) }}" method="POST">
                                                         @csrf
                                                         @method('DELETE')
@@ -364,19 +369,19 @@
                                                     <div>
                                                         <button type="button" class="btn btn-secondary me-1" data-bs-dismiss="modal">Batal</button>
                                                         
-                                                        {{-- Tombol Simpan (Sekarang akan berfungsi karena ID Form sudah ada) --}}
                                                         <button type="button" class="btn btn-primary fw-bold" onclick="document.getElementById('formUpdate{{ $ticket->id }}').submit()">
                                                             <i class="fas fa-save me-1"></i> Simpan Perubahan
                                                         </button>
                                                     </div>
-                                                </div> {{-- Footer ditutup dengan rapi, tanpa sisa tag form --}}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
 
+                                    {{-- KALO DAFTAR TIKET BULANAN MASIH KOSONG --}}
                                     @empty
                                         <tr>
-                                            <td colspan="5" class="text-center py-4 text-muted">
+                                            <td colspan="6" class="text-center py-4 text-muted">
                                                 <i class="fas fa-box-open fa-2x mb-2"></i><br>
                                                 Belum ada laporan masuk hari ini.
                                             </td>
@@ -393,28 +398,49 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
+    {{-- SCRIPT RELOAD PAGE --}}
     <script>
-        // Tunggu halaman selesai loading
         document.addEventListener("DOMContentLoaded", function() {
-            
-            // Cari elemen alert (pesan sukses)
             var alertElement = document.querySelector('.alert');
 
-            // Kalau alert-nya nongol...
             if (alertElement) {
-                // auto scroll ke update alert
-                // setTimeout(function(){
-                //     alertElement.scrollIntoView({behavior: 'smooth', block: 'center'});
-                // }, 2000);
                 alertElement.scrollIntoView({behavior: 'smooth', block: 'center'});
                 
-                // Pasang timer 5 detik (5000 milidetik)
                 setTimeout(function() {
-                    // Panggil fungsi tutup bawaan Bootstrap 5 (biar ada animasi fade-out nya)
                     var bsAlert = new bootstrap.Alert(alertElement);
                     bsAlert.close();
                 }, 5000);
             }
+        });
+    </script>
+
+    {{-- PLUGIN FLATPICKR (KALENDER) --}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@latest/dist/plugins/monthSelect/style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@latest/dist/plugins/monthSelect/index.js"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/id.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            flatpickr("#monthPicker", {
+                locale: "id",
+                altInput: true,
+                
+                plugins: [
+                    new monthSelectPlugin({
+                        shorthand: false,
+                        dateFormat: "Y-m",
+                        altFormat: "F Y",
+                        theme: "light"
+                    })
+                ],
+                
+                onChange: function(selectedDates, dateStr, instance) {
+                    document.getElementById('filterForm').submit();
+                }
+            });
         });
     </script>
 </body>

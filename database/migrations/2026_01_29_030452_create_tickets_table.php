@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('tickets', function (Blueprint $table) {
             $table->id(); // ticket id
             $table->string('lokasi'); // lokasi seperti IGD, Poli, Atau Nurse Station
-            $table->enum('kategori', ['Jaringan', 'Komputer', 'Printer', 'Khanza', 'Antrian', 'Lain-lain']); // tipe yang lagi trouble apa
+            $table->enum('kategori', ['Jaringan', 'Komputer', 'Printer', 'Sistem', 'Khanza', 'Antrian', 'Lain-lain']); // tipe yang lagi trouble apa
             $table->text('kendala'); //isi detail keluhan dari chat wa ataupun call wa
             $table->enum('status', ['Baru', 'Proses', 'Selesai'])->default('Baru');
             

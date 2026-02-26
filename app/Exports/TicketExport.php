@@ -24,13 +24,11 @@ class TicketExport implements FromCollection, WithHeadings, WithMapping, ShouldA
     {
         $query = Ticket::query();
 
-        if($this->filter == 'hari_ini'){
-            $query->whereDate('created_at', Carbon::today());
-        } elseif($this->filter == 'bulan_ini'){
-            $query->whereMonth('created_at', Carbon::now()->month)
-                  ->whereYear('created_at', Carbon::now()->year);
-        } elseif($this->filter == 'tahun_ini'){
-            $query->whereYear('created_at', Carbon::now()->year);
+        if($this->filter){
+            $parts = explode('-', $this->filter);
+            if(count($parts) == 2){
+                $query->whereYear('created_at', $parts[0])->whereMonth('created_at', $parts[1]);
+            }
         }
 
         return $query->orderBy('created_at', 'asc')->get();
