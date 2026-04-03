@@ -36,7 +36,7 @@
                     <div class="card-body">
                         <h6 class="card-title text-uppercase small opacity-75">Tiket Baru</h6>
                         <h2 class="fw-bold display-6">{{ $totalBaru }}</h2>
-                        <p class="card-text small mb-0"><i class="fas fa-exclamation-circle me-1"></i> Belum direspon</p>
+                        <p class="card-text small mb-0"><i class="fas fa-exclamation-triangle me-1"></i> Belum direspon</p>
                     </div>
                 </div>
             </div>
@@ -69,7 +69,7 @@
                     <div class="card-body">
                         <h6 class="card-title text-uppercase small opacity-75">Rata-rata Respon</h6>
                         <h2 class="fw-bold display-6">±{{ $avgResponseTime }}<span class="fs-6">mnt</span></h2>
-                        <p class="card-text small mb-0"><i class="fas fa-stopwatch me-1"></i> Speed Admin</p>
+                        <p class="card-text small mb-0"><i class="fas fa-stopwatch me-1"></i> Kesigapan Admin</p>
                     </div>
                 </div>
             </div>
@@ -382,8 +382,8 @@
                                     @empty
                                         <tr>
                                             <td colspan="6" class="text-center py-4 text-muted">
-                                                <i class="fas fa-box-open fa-2x mb-2"></i><br>
-                                                Belum ada laporan masuk hari ini.
+                                                <i class="fas fa-ticket fa-2x mb-2"></i><br>
+                                                Belum ada tiket masuk hari ini.
                                             </td>
                                         </tr>
                                     @endforelse
