@@ -81,6 +81,11 @@ class TicketCotroller extends Controller
         // return view('index', compact('tickets')); //nampilin view 
     }
 
+    public function create()
+    {
+        return view('form-public');
+    }
+
     public function store(Request $request) //function nyimpen data 
     {
         $request->validate([ //validasi kalo si input ini gaboleh kosong
@@ -94,7 +99,7 @@ class TicketCotroller extends Controller
             'kendala' => $request->kendala,
             'status' => 'Baru', // otomatis statusnya jadi baru ketika tiker baru aja terkirim
         ]);// balik lagi ke halaman awal
-        return redirect()->route('home')->with('success', 'Laporan berhasil dicatat!');
+        return redirect()->back()->with('success', 'Laporan berhasil dicatat!');
     }
 
     public function export(Request $request)
@@ -156,5 +161,77 @@ class TicketCotroller extends Controller
         $ticket->delete(); // hapus
 
         return redirect()->back()->with('success', 'Tiket Berhasil Dihapus!');
+    }
+
+    // Fungsi khusus buat ngasih data JSON ke DataTables
+    public function getAjaxTickets(Request $request)
+    {
+        // 1. Ambil filter bulan (sama kayak fungsi index)
+        $defaultBulan = \Carbon\Carbon::now()->format('Y-m');
+        $filter = $request->get('filter', $defaultBulan);
+        
+        $parts = explode('-', $filter);
+        $tahun = $parts[0];
+        $bulan = $parts[1];
+
+        // 2. Tarik data dari database
+        $tickets = Ticket::whereYear('created_at', $tahun)
+                         ->whereMonth('created_at', $bulan)
+                         ->orderBy('created_at', 'desc')
+                         ->get();
+
+        // 3. Format datanya biar bisa dibaca DataTables
+        $data = [];
+        foreach ($tickets as $ticket) {
+            
+            // Format Badge Status
+            $badgeStatus = '';
+            $btnAction = '';
+            
+            if ($ticket->status == 'Baru') {
+                $badgeStatus = '<span class="badge bg-danger">🔴 Baru</span>';
+                // Tombol Tangani
+                $btnAction = '
+                <form action="'.route("ticket.update", $ticket->id).'" method="POST" class="d-inline">
+                    '.csrf_field().' '.method_field("PUT").'
+                    <input type="hidden" name="status" value="Proses">
+                    <button type="submit" class="btn btn-sm btn-outline-warning fw-bold"><i class="fas fa-tools"></i> Tangani</button>
+                </form>';
+            } elseif ($ticket->status == 'Proses') {
+                $badgeStatus = '<span class="badge bg-warning text-dark">⏳ Proses</span>';
+                // Tombol Selesaikan
+                $btnAction = '
+                <form action="'.route("ticket.update", $ticket->id).'" method="POST" class="d-inline">
+                    '.csrf_field().' '.method_field("PUT").'
+                    <input type="hidden" name="status" value="Selesai">
+                    <button type="submit" class="btn btn-sm btn-outline-success fw-bold"><i class="fas fa-check"></i> Selesaikan</button>
+                </form>';
+            } else {
+                $badgeStatus = '<span class="badge bg-success">✅ Selesai</span>';
+            }
+
+            // Gabungin Tombol Action + Tombol Edit (Modal)
+            $actionColumn = '
+                <div class="d-flex align-items-center gap-2">
+                    '.$badgeStatus.' '.$btnAction.'
+                    <button type="button" class="btn btn-sm btn-light border ms-auto" data-bs-toggle="modal" data-bs-target="#modalEdit'.$ticket->id.'">
+                        <i class="fas fa-edit text-primary"></i>
+                    </button>
+                </div>';
+
+            // Masukin ke array DataTables
+            $data[] = [
+                'tanggal' => \Carbon\Carbon::parse($ticket->created_at)->format('d/m/Y H:i'),
+                'lokasi' => '<span class="fw-bold">'.$ticket->lokasi.'</span>',
+                'kategori' => '<span class="badge bg-secondary">'.$ticket->kategori.'</span>',
+                'kendala' => \Illuminate\Support\Str::limit($ticket->kendala, 50),
+                'action' => $actionColumn
+            ];
+        }
+
+        // 4. Return data pake format JSON DataTables
+        return response()->json([
+            'data' => $data
+        ]);
     }
 }

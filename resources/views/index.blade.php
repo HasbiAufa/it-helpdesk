@@ -14,6 +14,9 @@
             <a class="navbar-brand fw-bold" href="http://it-helpdesk.test">
                 <i class="fas fa-hospital-user me-2"></i> IT Helpdesk Internal
             </a>
+            <a href="{{ route('logout') }}" class="btn btn-danger btn-sm fw-bold shadow-sm">
+                <i class="bi bi-box-arrow-left"></i> Keluar (Logout)
+            </a>
             <span class="text-white text-sm">RS Syarif Hidayatullah</span>
         </div>
     </nav>
@@ -21,7 +24,7 @@
     <div class="container mt-4">      
         <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
             <h4 class="fw-bold text-primary"><i class="fas fa-chart-line me-2"></i>Dashboard Monitoring</h4>
-            <form action="{{ route('home') }}" method="GET" id="filterForm" class="d-flex">
+            <form action="{{ route('dashboard') }}" method="GET" id="filterForm" class="d-flex">
                 <label class="col-form-label me-2 fw-bold text-muted small">Bulan:</label>
                 
                 <input type="text" id="monthPicker" name="filter" class="form-control form-control-sm bg-white" 
