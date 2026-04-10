@@ -16,7 +16,7 @@ class CekAdmin
     public function handle(Request $request, Closure $next): Response
     {
         if (!session()->has('admin_akses')) {
-            return redirect('/login-it')->with('error', 'Gagal! Silahkan Login terlebih dahulu.');
+            return redirect('/login')->with('error', 'Gagal! Silahkan Login terlebih dahulu.');
         }
 
         return $next($request);

@@ -10,7 +10,7 @@ Route::get('/', [TicketCotroller::class, 'create'])->name('ticket.create');
 Route::post('simpan', [TicketCotroller::class, 'store'])->name('ticket.store'); // nerima data dari form yang diisi, disimpen nya di sini
 
 // Auth
-Route::get('/login-it', [AuthController::class, 'showLogin'])->name('login');
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/cek-login', [AuthController::class, 'cekPin'])->name('cekLogin');
 Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 
