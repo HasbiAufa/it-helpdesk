@@ -196,7 +196,10 @@
     <script>
         $(document).ready(function() {
             
-            // INISIASI DATATABLES + TANGKEP STATS DASHBOARD
+            // 1. VARIABEL "INGATAN" (Naro di sini biar nggak hilang pas refresh tabel)
+            let lastCount = null;
+
+            // 2. INISIASI DATATABLES + TANGKEP STATS DASHBOARD
             let table = $('#dataTableTickets').DataTable({
                 processing: true,
                 ajax: {
@@ -214,6 +217,23 @@
                             $('#valAvgRespon').html('±' + json.stats.avgRespon + '<span class="fs-6">mnt</span>');
                             $('#tbodyRekapKategori').html(json.stats.htmlKategori);
                             $('#containerModals').html(json.stats.htmlModals);
+
+                            // --- LOGIKA REAL-TIME NOTIF ---
+                            // Cek apakah jumlah tiket sekarang lebih banyak dari sebelumnya
+                            if (lastCount !== null && json.data.length > lastCount) {
+                                Swal.fire({
+                                    title: 'Tiket Baru!',
+                                    text: 'Ada laporan baru!',
+                                    icon: 'info',
+                                    toast: true,
+                                    position: 'top-end', // Di pojok kanan atas biar nggak ganggu
+                                    showConfirmButton: false,
+                                    timer: 5000,
+                                    timerProgressBar: true
+                                });
+                            }
+                            // Update angka terakhir buat perbandingan berikutnya
+                            lastCount = json.data.length;
                         }
                         return json.data;
                     }
@@ -227,43 +247,42 @@
                 ]
             });
 
-            // KALENDER BERUBAH -> TABEL, CARD, & JUDUL REFRESH
+            // 3. TIMER AUTO-REFRESH (POLLING)
+            // Cek data ke server tiap 15 detik secara background
+            setInterval(function() {
+                // reload(null, false) artinya: refresh data tapi posisi halaman user nggak berubah
+                table.ajax.reload(null, false); 
+            }, 10000);
+
+            // 4. KALENDER BERUBAH -> TABEL, CARD, & JUDUL REFRESH
             flatpickr("#monthPicker", {
                 locale: "id", 
                 altInput: true,
                 plugins: [new monthSelectPlugin({ shorthand: false, dateFormat: "Y-m", altFormat: "F Y", theme: "light" })],
                 onChange: function(selectedDates, dateStr, instance) {
-                    
-                    // --- IDE LU DITERAPIN DI SINI BRO! ---
-                    // 1. Daftar nama bulan bahasa Indonesia
                     const namaBulan = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+                    let pecah = dateStr.split('-'); 
+                    let tahun = pecah[0]; 
+                    let indeksBulan = parseInt(pecah[1]) - 1; 
                     
-                    // 2. Tangkep nilai kalender (Misal: "2026-04")
-                    let valKalender = $('#monthPicker').val();
-                    let pecah = valKalender.split('-'); // Dipisah jadi ['2026', '04']
-                    
-                    let tahun = pecah[0];
-                    let indeksBulan = parseInt(pecah[1]) - 1; // Dikurang 1 karena array mulai dari 0
-                    
-                    // 3. Bikin let judul ala lu
-                    let judul = namaBulan[indeksBulan] + " " + tahun;
                     let judulBaru = namaBulan[indeksBulan] + " " + tahun;
                     
-                    // 4. Tembak ke HTML
-                    $('#periodeTabelKategori').text(judul);
+                    $('#periodeTabelKategori').text(judulBaru);
                     $('#periodeDaftarTiket').text(judulBaru);
-                    // -------------------------------------
 
-                    // Refresh DataTables & Card dari AJAX
+                    // Reset lastCount pas ganti bulan biar nggak salah deteksi notif tiket baru bulan lalu
+                    lastCount = null;
                     table.ajax.reload();
                 }
             });
 
-            // SUBMIT FORM TIKET BARU TANPA RELOAD
+            // 5. SUBMIT FORM TIKET BARU TANPA RELOAD
             $('#formCatatTiket').on('submit', function(e) {
                 e.preventDefault();
                 $.ajax({
-                    url: $(this).attr('action'), method: $(this).attr('method'), data: $(this).serialize(),
+                    url: $(this).attr('action'), 
+                    method: $(this).attr('method'), 
+                    data: $(this).serialize(),
                     success: function(response) {
                         $('#formCatatTiket')[0].reset();
                         Swal.fire({ icon: 'success', title: 'Mantap!', text: response.message, timer: 2000, showConfirmButton: false });
@@ -273,7 +292,7 @@
                 });
             });
             
-            // SUBMIT TOMBOL STATUS (Tangani/Selesaikan) TANPA RELOAD
+            // 6. SUBMIT TOMBOL STATUS (Tangani/Selesaikan) TANPA RELOAD
             $(document).on('submit', '.formUpdateStatus', function(e) {
                 e.preventDefault();
                 $.ajax({
@@ -281,6 +300,37 @@
                     success: function(response) {
                         Swal.fire({ icon: 'success', title: 'Status Diperbarui', timer: 1500, showConfirmButton: false });
                         table.ajax.reload(null, false);
+                    }
+                });
+            });
+
+            // 7. SUBMIT TOMBOL HAPUS (Pake SweetAlert) TANPA RELOAD
+            $(document).on('submit', '.formDeleteTicket', function(e) {
+                e.preventDefault();
+                let form = $(this);
+
+                Swal.fire({
+                    title: 'Yakin mau dihapus?',
+                    text: "Data tiket ini bakal hilang permanen lho!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="fas fa-trash-alt me-1"></i> Ya, Hapus!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: form.attr('action'),
+                            method: form.attr('method'),
+                            data: form.serialize(),
+                            success: function(response) {
+                                form.closest('.modal').modal('hide');
+                                Swal.fire({ icon: 'success', title: 'Terhapus!', text: response.message, timer: 1500, showConfirmButton: false });
+                                table.ajax.reload(null, false);
+                            },
+                            error: function() { Swal.fire('Error!', 'Gagal menghapus tiket bro.', 'error'); }
+                        });
                     }
                 });
             });

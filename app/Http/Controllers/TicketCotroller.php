@@ -162,9 +162,14 @@ class TicketCotroller extends Controller
     }
 
     // fungsi hapus data
-    public function destroy($id){
+    public function destroy(Request $request, $id){
         $ticket = Ticket::findOrFail($id); // nyari data
         $ticket->delete(); // hapus
+
+        // Kalo requestnya dari AJAX (SweetAlert), kirim respon JSON
+        if($request->ajax()){
+            return response()->json(['message' => 'Tiket Berhasil Dihapus Permanen!']);
+        }
 
         return redirect()->back()->with('success', 'Tiket Berhasil Dihapus!');
     }

@@ -79,11 +79,11 @@
             </div>
 
             <div class="modal-footer bg-light justify-content-between">
-                <form action="{{ route('ticket.destroy', $ticket->id) }}" method="POST">
+                <form action="{{ route('ticket.destroy', $ticket->id) }}" method="POST" class="formDeleteTicket">
                     @csrf
                     @method('DELETE')
                     
-                    <button type="submit" class="btn btn-danger" onclick="return confirm('⚠️ Yakin mau menghapus tiket ini permanen?');">
+                    <button type="submit" class="btn btn-danger">
                         <i class="fas fa-trash-alt me-1"></i> Hapus
                     </button>
                 </form>
