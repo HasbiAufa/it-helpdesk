@@ -35,7 +35,7 @@ class TicketCotroller extends Controller
         $totalSelesai = $tickets->where('status', 'Selesai')->count();
 
         // REKAP KENDALA
-        $ListKategori = ['Jaringan', 'Komputer', 'Printer', 'Khanza', 'Antrian', 'Lain-lain'];
+        $ListKategori = ['Jaringan', 'Komputer', 'Printer', 'Khanza', 'Sistem', 'Antrian', 'Lain-lain'];
         $rekapKategori = [];
 
         foreach($ListKategori as $kat){
@@ -98,7 +98,13 @@ class TicketCotroller extends Controller
             'kategori' => $request->kategori,
             'kendala' => $request->kendala,
             'status' => 'Baru', // otomatis statusnya jadi baru ketika tiker baru aja terkirim
-        ]);// balik lagi ke halaman awal
+        ]);
+        // Kalau yang ngirim request itu AJAX (dari form dashboard admin), bales pake JSON
+        if($request->ajax()){
+            return response()->json(['message' => 'Laporan berhasil dicatat!']);
+        }
+        
+        // Kalau yang ngirim request itu dari form halaman publik biasa, tetep pake redirect
         return redirect()->back()->with('success', 'Laporan berhasil dicatat!');
     }
 
@@ -164,9 +170,9 @@ class TicketCotroller extends Controller
     }
 
     // Fungsi khusus buat ngasih data JSON ke DataTables
+    // FUNGSI AJAX FULL DASHBOARD
     public function getAjaxTickets(Request $request)
     {
-        // 1. Ambil filter bulan (sama kayak fungsi index)
         $defaultBulan = \Carbon\Carbon::now()->format('Y-m');
         $filter = $request->get('filter', $defaultBulan);
         
@@ -174,34 +180,78 @@ class TicketCotroller extends Controller
         $tahun = $parts[0];
         $bulan = $parts[1];
 
-        // 2. Tarik data dari database
+        // 1. TARIK DATA TIKET
         $tickets = Ticket::whereYear('created_at', $tahun)
                          ->whereMonth('created_at', $bulan)
                          ->orderBy('created_at', 'desc')
                          ->get();
 
-        // 3. Format datanya biar bisa dibaca DataTables
+        // 2. HITUNG STATISTIK CARD DASHBOARD
+        $totalBaru = $tickets->where('status', 'Baru')->count();
+        $totalProses = $tickets->where('status', 'Proses')->count();
+        $totalSelesai = $tickets->where('status', 'Selesai')->count();
+
+        $respondedTickets = $tickets->where('waktu_respon', '!=', null);
+        $avgResponseTime = 0;
+        if($respondedTickets->count() > 0){
+            $totalSelisihMenit = $respondedTickets->reduce(function ($carry, $ticket){
+                $start = \Carbon\Carbon::parse($ticket->created_at);
+                $respon = \Carbon\Carbon::parse($ticket->waktu_respon);
+                return $carry + $start->floatDiffInMinutes($respon);
+            }, 0);
+            $avgResponseTime = round($totalSelisihMenit / $respondedTickets->count(), 1);
+        }
+
+        // 3. HITUNG & RENDER HTML UNTUK TABEL REKAP KATEGORI
+        $ListKategori = ['Jaringan', 'Komputer', 'Printer', 'Khanza', 'Antrian', 'Lain-lain'];
+        $rekapKategoriHtml = '';
+        $sumTotal = 0; $sumTertangani = 0; $sumTidak = 0;
+
+        foreach($ListKategori as $index => $kat){
+            $dataKategori = $tickets->where('kategori', $kat);
+            $tot = $dataKategori->count();
+            $ter = $dataKategori->where('status', 'Selesai')->count();
+            $tdk = $dataKategori->whereIn('status', ['Baru', 'Proses'])->count();
+
+            $sumTotal += $tot; $sumTertangani += $ter; $sumTidak += $tdk;
+
+            $rekapKategoriHtml .= '
+                <tr>
+                    <td>'.($index + 1).'.</td>
+                    <td class="text-start fw-bold">'.$kat.'</td>
+                    <td>'.$tot.'</td>
+                    <td class="fw-bold text-success">'.$ter.'</td>
+                    <td class="fw-bold text-danger">'.$tdk.'</td>
+                </tr>';
+        }
+        $rekapKategoriHtml .= '
+            <tr class="fw-bold table-secondary">
+                <td colspan="2" class="text-center">JUMLAH TOTAL</td>
+                <td>'.$sumTotal.'</td>
+                <td>'.$sumTertangani.'</td>
+                <td>'.$sumTidak.'</td>
+            </tr>';
+
+        // 4. FORMAT DATA UNTUK DATATABLES DAN MODAL EDIT
         $data = [];
+        $modalsHtml = ''; // Kita kirim kodingan HTML pop up edit lewat sini biar ga error
+
         foreach ($tickets as $ticket) {
-            
-            // Format Badge Status
-            $badgeStatus = '';
-            $btnAction = '';
+            // Logika Badge Status
+            $badgeStatus = ''; $btnAction = '';
             
             if ($ticket->status == 'Baru') {
                 $badgeStatus = '<span class="badge bg-danger">🔴 Baru</span>';
-                // Tombol Tangani
                 $btnAction = '
-                <form action="'.route("ticket.update", $ticket->id).'" method="POST" class="d-inline">
+                <form action="'.route("ticket.update", $ticket->id).'" method="POST" class="d-inline formUpdateStatus">
                     '.csrf_field().' '.method_field("PUT").'
                     <input type="hidden" name="status" value="Proses">
                     <button type="submit" class="btn btn-sm btn-outline-warning fw-bold"><i class="fas fa-tools"></i> Tangani</button>
                 </form>';
             } elseif ($ticket->status == 'Proses') {
                 $badgeStatus = '<span class="badge bg-warning text-dark">⏳ Proses</span>';
-                // Tombol Selesaikan
                 $btnAction = '
-                <form action="'.route("ticket.update", $ticket->id).'" method="POST" class="d-inline">
+                <form action="'.route("ticket.update", $ticket->id).'" method="POST" class="d-inline formUpdateStatus">
                     '.csrf_field().' '.method_field("PUT").'
                     <input type="hidden" name="status" value="Selesai">
                     <button type="submit" class="btn btn-sm btn-outline-success fw-bold"><i class="fas fa-check"></i> Selesaikan</button>
@@ -210,16 +260,14 @@ class TicketCotroller extends Controller
                 $badgeStatus = '<span class="badge bg-success">✅ Selesai</span>';
             }
 
-            // Gabungin Tombol Action + Tombol Edit (Modal)
             $actionColumn = '
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex justify-content-center align-items-center gap-2">
                     '.$badgeStatus.' '.$btnAction.'
-                    <button type="button" class="btn btn-sm btn-light border ms-auto" data-bs-toggle="modal" data-bs-target="#modalEdit'.$ticket->id.'">
+                    <button type="button" class="btn btn-sm btn-light border shadow-sm" data-bs-toggle="modal" data-bs-target="#modalEdit'.$ticket->id.'">
                         <i class="fas fa-edit text-primary"></i>
                     </button>
                 </div>';
 
-            // Masukin ke array DataTables
             $data[] = [
                 'tanggal' => \Carbon\Carbon::parse($ticket->created_at)->format('d/m/Y H:i'),
                 'lokasi' => '<span class="fw-bold">'.$ticket->lokasi.'</span>',
@@ -227,11 +275,22 @@ class TicketCotroller extends Controller
                 'kendala' => \Illuminate\Support\Str::limit($ticket->kendala, 50),
                 'action' => $actionColumn
             ];
+
+            // Render HTML Modal Edit (Copas dari file Blade lu)
+            $modalsHtml .= view('components.modal-edit', compact('ticket'))->render();
         }
 
-        // 4. Return data pake format JSON DataTables
+        // 5. KIRIM PAKETAN KOMPLIT KE BLADE
         return response()->json([
-            'data' => $data
+            'data' => $data,
+            'stats' => [
+                'totalBaru' => $totalBaru,
+                'totalProses' => $totalProses,
+                'totalSelesai' => $totalSelesai,
+                'avgRespon' => $avgResponseTime,
+                'htmlKategori' => $rekapKategoriHtml,
+                'htmlModals' => $modalsHtml
+            ]
         ]);
     }
 }
