@@ -221,20 +221,20 @@ class TicketCotroller extends Controller
             $sumTotal += $tot; $sumTertangani += $ter; $sumTidak += $tdk;
 
             $rekapKategoriHtml .= '
-                <tr>
-                    <td>'.($index + 1).'.</td>
-                    <td class="text-start fw-bold">'.$kat.'</td>
-                    <td>'.$tot.'</td>
-                    <td class="fw-bold text-success">'.$ter.'</td>
-                    <td class="fw-bold text-danger">'.$tdk.'</td>
+                <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <td class="py-3 px-4 text-sm text-gray-500">'.($index + 1).'.</td>
+                    <td class="py-3 px-4 text-sm font-semibold text-gray-900 text-start">'.$kat.'</td>
+                    <td class="py-3 px-4 text-sm text-gray-600">'.$tot.'</td>
+                    <td class="py-3 px-4 text-sm font-bold text-emerald-600">'.$ter.'</td>
+                    <td class="py-3 px-4 text-sm font-bold text-red-600">'.$tdk.'</td>
                 </tr>';
         }
         $rekapKategoriHtml .= '
-            <tr class="fw-bold table-secondary">
-                <td colspan="2" class="text-center">JUMLAH TOTAL</td>
-                <td>'.$sumTotal.'</td>
-                <td>'.$sumTertangani.'</td>
-                <td>'.$sumTidak.'</td>
+            <tr class="bg-gray-50 font-bold">
+                <td colspan="2" class="py-3 px-4 text-sm text-gray-900 text-center">JUMLAH TOTAL</td>
+                <td class="py-3 px-4 text-sm text-gray-900">'.$sumTotal.'</td>
+                <td class="py-3 px-4 text-sm text-emerald-600">'.$sumTertangani.'</td>
+                <td class="py-3 px-4 text-sm text-red-600">'.$sumTidak.'</td>
             </tr>';
 
         // 4. FORMAT DATA UNTUK DATATABLES DAN MODAL EDIT
@@ -246,30 +246,30 @@ class TicketCotroller extends Controller
             $badgeStatus = ''; $btnAction = '';
             
             if ($ticket->status == 'Baru') {
-                $badgeStatus = '<span class="badge bg-danger">🔴 Baru</span>';
+                $badgeStatus = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">🔴 Baru</span>';
                 $btnAction = '
-                <form action="'.route("ticket.update", $ticket->id).'" method="POST" class="d-inline formUpdateStatus">
+                <form action="'.route("ticket.update", $ticket->id).'" method="POST" class="inline formUpdateStatus">
                     '.csrf_field().' '.method_field("PUT").'
                     <input type="hidden" name="status" value="Proses">
-                    <button type="submit" class="btn btn-sm btn-outline-warning fw-bold"><i class="fas fa-tools"></i> Tangani</button>
+                    <button type="submit" class="inline-flex items-center px-2.5 py-1.5 border border-amber-300 shadow-sm text-xs font-medium rounded text-amber-700 bg-white hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors"><i class="fas fa-tools mr-1"></i> Tangani</button>
                 </form>';
             } elseif ($ticket->status == 'Proses') {
-                $badgeStatus = '<span class="badge bg-warning text-dark">⏳ Proses</span>';
+                $badgeStatus = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">⏳ Proses</span>';
                 $btnAction = '
-                <form action="'.route("ticket.update", $ticket->id).'" method="POST" class="d-inline formUpdateStatus">
+                <form action="'.route("ticket.update", $ticket->id).'" method="POST" class="inline formUpdateStatus">
                     '.csrf_field().' '.method_field("PUT").'
                     <input type="hidden" name="status" value="Selesai">
-                    <button type="submit" class="btn btn-sm btn-outline-success fw-bold"><i class="fas fa-check"></i> Selesaikan</button>
+                    <button type="submit" class="inline-flex items-center px-2.5 py-1.5 border border-emerald-300 shadow-sm text-xs font-medium rounded text-emerald-700 bg-white hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"><i class="fas fa-check mr-1"></i> Selesaikan</button>
                 </form>';
             } else {
-                $badgeStatus = '<span class="badge bg-success">✅ Selesai</span>';
+                $badgeStatus = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">✅ Selesai</span>';
             }
 
             $actionColumn = '
-                <div class="d-flex justify-content-center align-items-center gap-2">
+                <div class="flex justify-center items-center gap-2">
                     '.$badgeStatus.' '.$btnAction.'
-                    <button type="button" class="btn btn-sm btn-light border shadow-sm" data-bs-toggle="modal" data-bs-target="#modalEdit'.$ticket->id.'">
-                        <i class="fas fa-edit text-primary"></i>
+                    <button type="button" class="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors" data-bs-toggle="modal" data-bs-target="#modalEdit'.$ticket->id.'">
+                        <i class="fas fa-edit"></i>
                     </button>
                 </div>';
 
