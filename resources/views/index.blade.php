@@ -250,8 +250,11 @@
             // 3. TIMER AUTO-REFRESH (POLLING)
             // Cek data ke server tiap 15 detik secara background
             setInterval(function() {
-                // reload(null, false) artinya: refresh data tapi posisi halaman user nggak berubah
-                table.ajax.reload(null, false); 
+                let isModalOpen = $('.modal.show').length > 0;
+                
+                if (!isModalOpen) {
+                    table.ajax.reload(null, false); 
+                }
             }, 10000);
 
             // 4. KALENDER BERUBAH -> TABEL, CARD, & JUDUL REFRESH
