@@ -157,9 +157,15 @@
             {{-- DAFTAR TIKET AJAX --}}
             <div class="col-md-8">
                 <div class="card shadow-sm border-0">
-                    <div class="card-header bg-white fw-bold py-3">
-                        <i class="fas fa-list me-1"></i> Daftar Tiket 
-                        (<span id="periodeDaftarTiket">{{ \Carbon\Carbon::parse($filter . '-01')->translatedFormat('F Y') }}</span>)
+                    <div class="card-header bg-white fw-bold py-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-list me-1"></i> Daftar Tiket 
+                            (<span id="periodeDaftarTiket">{{ \Carbon\Carbon::parse($filter . '-01')->translatedFormat('F Y') }}</span>)
+                        </div>
+
+                        <a href="{{ route('ticket.export', ['filter' => $filter]) }}" id="btnExport" class="btn btn-success btn-sm shadow-sm fw-bold">
+                            <i class="fas fa-file-excel me-1"></i> Export Laporan
+                        </a>
                     </div>
                     <div class="card-body p-3">
                         <div class="table-responsive">
@@ -272,6 +278,10 @@
                     
                     $('#periodeTabelKategori').text(judulBaru);
                     $('#periodeDaftarTiket').text(judulBaru);
+
+                    let urlExport = new URL($('#btnExport').attr('href'));
+                    urlExport.searchParams.set('filter', dateStr); // dateStr isinya e.g "2026-05"
+                    $('#btnExport').attr('href', urlExport.toString());
 
                     // Reset lastCount pas ganti bulan biar nggak salah deteksi notif tiket baru bulan lalu
                     lastCount = null;
